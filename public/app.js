@@ -963,6 +963,42 @@ socket.on('chat-message', (data) => {
   }
 });
 
+// Emoji Board Logic
+const emojiBoard = document.getElementById('emoji-board');
+if (emojiBoard) {
+  emojiBoard.querySelectorAll('.emoji-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const emoji = btn.getAttribute('data-emoji');
+      socket.emit('emoji-reaction', emoji);
+    });
+  });
+}
+
+socket.on('emoji-reaction', (emoji) => {
+  spawnFlyingEmoji(emoji);
+});
+
+function spawnFlyingEmoji(emoji) {
+  const emojiEl = document.createElement('div');
+  emojiEl.className = 'flying-emoji';
+  emojiEl.textContent = emoji;
+  
+  // Random horizontal position (10% to 90%)
+  const randomX = Math.floor(Math.random() * 80) + 10;
+  emojiEl.style.left = `${randomX}%`;
+  
+  // Add to player wrapper so it flies over the video
+  const playerWrapper = document.getElementById('video-wrapper');
+  if (playerWrapper) {
+    playerWrapper.appendChild(emojiEl);
+    
+    // Cleanup after animation
+    setTimeout(() => {
+      emojiEl.remove();
+    }, 4000);
+  }
+}
+
 socket.on('user-muted', (data) => {
   const wrapper = document.getElementById(`wrapper-${data.id}`);
   if (wrapper) {

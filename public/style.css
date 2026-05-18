@@ -450,6 +450,65 @@ h1 {
   gap: 10px;
 }
 
+.emoji-board {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.emoji-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  padding: 5px;
+  line-height: 1;
+}
+
+.emoji-btn:hover {
+  transform: scale(1.3);
+}
+
+.emoji-btn:active {
+  transform: scale(0.9);
+}
+
+/* Flying Emoji Animation */
+.flying-emoji {
+  position: absolute;
+  bottom: -50px;
+  font-size: 3.5rem;
+  pointer-events: none;
+  z-index: 1000;
+  animation: floatUp 4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+  text-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.5) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(-10vh) translateX(10px) scale(1.2) rotate(5deg);
+  }
+  30% {
+    transform: translateY(-30vh) translateX(-20px) scale(1) rotate(-10deg);
+  }
+  60% {
+    transform: translateY(-60vh) translateX(30px) scale(1.1) rotate(15deg);
+  }
+  100% {
+    transform: translateY(-120vh) translateX(0) scale(0.8) rotate(-5deg);
+    opacity: 0;
+  }
+}
+
 .chat-input-area input {
   flex: 1;
   background: rgba(0,0,0,0.3);

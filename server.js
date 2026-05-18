@@ -354,6 +354,10 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('emoji-reaction', (emoji) => {
+    io.emit('emoji-reaction', emoji);
+  });
+
   socket.on('sync-heartbeat', (state) => {
     if (!clientStates[socket.id]) {
       clientStates[socket.id] = { currentTime: 0, isBuffering: false, isPlaying: false, lastUpdate: Date.now(), username: 'Unbekannt' };
