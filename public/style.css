@@ -312,29 +312,74 @@ p {
   top: 10px;
   left: 10px;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   pointer-events: auto;
+  flex-wrap: wrap;
+  max-width: 80%;
 }
 
 .overlay-cams .cam-wrapper {
-  width: 80px;
-  opacity: 0.8;
+  width: 120px; /* Default width */
+  min-width: 60px;
+  max-width: 300px;
+  opacity: 0.75; /* 75% opacity as requested */
   background: rgba(0,0,0,0.5);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 2px;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s, transform 0.3s;
+  position: relative;
+  resize: both; /* Enable resizing */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.overlay-cams .cam-wrapper:hover {
+.overlay-cams .cam-wrapper::after {
+  content: '⌟';
+  position: absolute;
+  bottom: 0;
+  right: 2px;
+  color: white;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.overlay-cams .cam-wrapper:hover::after {
   opacity: 1;
 }
 
 .overlay-cams .cam-wrapper video {
-  border-radius: 2px;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  object-fit: cover;
+  flex: 1;
 }
 
 .overlay-cams .cam-name {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
+  padding: 2px 0;
+  background: rgba(0,0,0,0.4);
+  width: 100%;
+  text-align: center;
+}
+
+/* Inactivity Hiding */
+.video-wrapper.inactive .custom-controls,
+.video-wrapper.inactive .overlay-chat {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 0.8s ease-out;
+}
+
+.custom-controls, .overlay-chat {
+  transition: opacity 0.3s ease-in;
+}
+
+/* Orientation fix for mobile cameras */
+.cam-wrapper video.rotated {
+  transform: rotate(90deg);
 }
 
 /* Overlay Chat (Top Right) */

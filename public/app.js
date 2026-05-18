@@ -938,6 +938,30 @@ socket.on('chat-message', (data) => {
   }
 });
 
+// Inactivity Hiding Logic
+let inactivityTimer;
+function resetInactivityTimer() {
+  videoWrapper.classList.remove('inactive');
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    // Only hide if video is playing AND chat input is hidden AND no one is hovering the controls
+    const isChatOpen = !chatOverlayInputContainer.classList.contains('hidden');
+    const isHoveringControls = document.querySelector('.custom-controls:hover') || document.querySelector('.overlay-chat:hover');
+    
+    if (!videoPlayer.paused && !isChatOpen && !isHoveringControls) {
+      videoWrapper.classList.add('inactive');
+    }
+  }, 7000); // 7 seconds
+}
+
+videoWrapper.addEventListener('mousemove', resetInactivityTimer);
+videoWrapper.addEventListener('touchstart', resetInactivityTimer);
+videoPlayer.addEventListener('play', resetInactivityTimer);
+videoPlayer.addEventListener('pause', () => {
+  videoWrapper.classList.remove('inactive');
+  clearTimeout(inactivityTimer);
+});
+
 // WebRTC Facecam
 const peerConnections = {};
 let localStream = null;
@@ -945,11 +969,17 @@ let localStream = null;
 const rtcConfig = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
+  ],
+  iceCandidatePoolSize: 10
 };
 
 function createPeerConnection(targetId, targetUsername) {
+  if (peerConnections[targetId]) return peerConnections[targetId];
+
   const pc = new RTCPeerConnection(rtcConfig);
   peerConnections[targetId] = pc;
 
@@ -959,7 +989,26 @@ function createPeerConnection(targetId, targetUsername) {
     }
   };
 
+  pc.onconnectionstatechange = () => {
+    console.log(`Connection state with ${targetId}: ${pc.connectionState}`);
+    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+      console.log('Restarting failed connection...');
+      pc.restartIce();
+    }
+  };
+
+  pc.onnegotiationneeded = async () => {
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('webrtc-offer', { target: targetId, offer: pc.localDescription });
+    } catch (e) {
+      console.error('Negotiation error:', e);
+    }
+  };
+
   pc.ontrack = event => {
+    console.log('Received remote track from', targetId);
     let wrapper = document.getElementById(`wrapper-${targetId}`);
     if (!wrapper) {
       wrapper = document.createElement('div');
@@ -970,6 +1019,13 @@ function createPeerConnection(targetId, targetUsername) {
       videoEl.id = `cam-${targetId}`;
       videoEl.autoplay = true;
       videoEl.playsInline = true;
+      
+      // Handle mobile orientation
+      videoEl.addEventListener('loadedmetadata', () => {
+        if (videoEl.videoWidth < videoEl.videoHeight) {
+          videoEl.style.objectFit = 'contain';
+        }
+      });
       
       const nameEl = document.createElement('span');
       nameEl.className = 'cam-name';
@@ -982,16 +1038,6 @@ function createPeerConnection(targetId, targetUsername) {
     const videoEl = document.getElementById(`cam-${targetId}`);
     if (videoEl && videoEl.srcObject !== event.streams[0]) {
       videoEl.srcObject = event.streams[0];
-    }
-  };
-
-  pc.onnegotiationneeded = async () => {
-    try {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit('webrtc-offer', { target: targetId, offer: pc.localDescription });
-    } catch (e) {
-      console.error('Negotiation error:', e);
     }
   };
 
@@ -1008,7 +1054,11 @@ async function startLocalVideo() {
       alert("⚠️ Kamera Fehler!\n\nDein Browser blockiert die Kamera.\nBitte stelle sicher, dass du auf der Seite 'Erweitert -> Risiko akzeptieren' geklickt hast, da Kameras nur über verschlüsselte HTTPS Verbindungen funktionieren.");
       return;
     }
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    
+    localStream = await navigator.mediaDevices.getUserMedia({ 
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, 
+      audio: true 
+    });
     
     let localWrapper = document.getElementById('wrapper-local');
     if (!localWrapper) {
@@ -1019,7 +1069,7 @@ async function startLocalVideo() {
       const localVideo = document.createElement('video');
       localVideo.id = 'local-video';
       localVideo.autoplay = true;
-      localVideo.muted = true; // Mute self to avoid feedback
+      localVideo.muted = true;
       localVideo.playsInline = true;
       
       const nameEl = document.createElement('span');
@@ -1028,27 +1078,27 @@ async function startLocalVideo() {
       
       localWrapper.appendChild(localVideo);
       localWrapper.appendChild(nameEl);
-      // Add local video to the beginning of the overlay
       overlayCams.insertBefore(localWrapper, overlayCams.firstChild);
     }
     const localVideo = document.getElementById('local-video');
     localVideo.srcObject = localStream;
 
-    Object.values(peerConnections).forEach(pc => {
+    for (const id in peerConnections) {
+      const pc = peerConnections[id];
       localStream.getTracks().forEach(track => {
-        // Only add if not already added
         const senders = pc.getSenders();
         const hasTrack = senders.find(s => s.track === track);
         if (!hasTrack) pc.addTrack(track, localStream);
       });
-    });
+    }
 
     btnToggleCam.textContent = 'Kamera Aus';
     btnToggleCam.style.background = '#ff4d4d';
     btnToggleCam.style.borderColor = '#ff4d4d';
     btnToggleCam.style.color = 'white';
   } catch (e) {
-    alert('Kamera konnte nicht gestartet werden (Möglicherweise HTTP-Beschränkung des Browsers): ' + e.message);
+    console.error('Kamera-Fehler:', e);
+    alert('Kamera konnte nicht gestartet werden: ' + e.message);
   }
 }
 
