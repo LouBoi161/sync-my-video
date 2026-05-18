@@ -3,7 +3,7 @@ name: Create Release
 on:
   push:
     tags:
-      - 'v*' # Trigger on version tags like v1.0.0
+      - 'v*'
 
 jobs:
   build:
@@ -25,6 +25,36 @@ jobs:
           mkdir -p dist
           npx pkg . --targets node18-linux-x64 --output dist/sync-my-video
 
+      - name: Create AppImage
+        run: |
+          # Download appimagetool
+          wget -O appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          
+          # Create AppDir
+          mkdir -p AppDir/usr/bin
+          cp dist/sync-my-video AppDir/usr/bin/
+          cp sync-my-video.desktop AppDir/
+          cp sync-my-video.svg AppDir/
+          
+          # AppRun script
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/sh
+          SELF=$(readlink -f "$0")
+          HERE=$(dirname "$SELF")
+          exec "$HERE/usr/bin/sync-my-video" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+          
+          # Link icon
+          ln -s sync-my-video.svg AppDir/.DirIcon
+          ln -s sync-my-video.svg AppDir/sync-my-video.svg
+          
+          # Build AppImage
+          # ARCH=x86_64 ./appimagetool AppDir dist/Sync_My_Video.AppImage
+          # Note: appimagetool inside docker/actions sometimes needs --appimage-extract-and-run
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir dist/Sync_My_Video.AppImage
+
       - name: Create Release Assets
         run: |
           cd dist
@@ -38,5 +68,6 @@ jobs:
             dist/sync-my-video-linux.tar.gz
             dist/sync-my-video-linux.zip
             dist/sync-my-video
+            dist/Sync_My_Video.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
