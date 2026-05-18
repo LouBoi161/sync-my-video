@@ -3,22 +3,22 @@
 [![GitHub license](https://img.shields.io/github/license/LouBoi161/sync-my-video?style=for-the-badge)](https://github.com/LouBoi161/sync-my-video/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/LouBoi161/sync-my-video?style=for-the-badge)](https://github.com/LouBoi161/sync-my-video/stargazers)
 
-Ein moderner, synchronisierter Videoplayer für dein lokales Netzwerk. Schau Videos zusammen mit deinen Freunden inklusive Live-Chat!
+Ein moderner, synchronisierter Videoplayer für lokale Netzwerke. Dieses Tool ermöglicht die gemeinsame Wiedergabe von Videos in Echtzeit, ergänzt durch eine integrierte Chat-Funktion.
 
 ---
 
-## ✨ Features
+## ✨ Funktionen
 
-- **🚀 Echtzeit-Synchronisation:** Alle Teilnehmer sehen das Video exakt zum gleichen Zeitpunkt.
-- **💬 Integrierter Chat:** Nutze die schwebende Chat-Bubble, um während des Films zu schreiben.
-- **🖥️ Custom Player:** Moderner Player mit Fullscreen-Support und intuitiven Controls.
-- **🔔 Nachricht-Popups:** Neue Chat-Nachrichten erscheinen kurz als Overlay.
-- **📂 Playlist-Management:** Hoste mehrere Videos und verwalte die Playlist live.
-- **📱 Mobile-Friendly:** Funktioniert im Browser auf PCs, Tablets und Smartphones.
+- **🚀 Echtzeit-Synchronisation:** Alle Teilnehmer sehen das Video zeitgleich.
+- **💬 Integrierter Chat:** Kommunikation über eine intuitive Chat-Oberfläche während der Wiedergabe.
+- **🖥️ Moderner Player:** Unterstützung für Vollbildmodus und benutzerfreundliche Steuerelemente.
+- **🔔 Benachrichtigungen:** Neue Chat-Nachrichten werden dezent als Overlay eingeblendet.
+- **📂 Playlist-Management:** Unterstützung für mehrere Videos mit dynamischer Playlist-Verwaltung.
+- **📱 Responsives Design:** Optimiert für die Nutzung auf PCs, Tablets und Smartphones.
 
 ---
 
-## 🛠️ Installation & Start
+## 🛠️ Installation & Inbetriebnahme
 
 1. **Repository klonen:**
    ```bash
@@ -33,19 +33,19 @@ Ein moderner, synchronisierter Videoplayer für dein lokales Netzwerk. Schau Vid
    ```bash
    npm start
    ```
-4. **Öffnen:** Besuche `https://localhost:3000` (oder die angezeigte IP deines Netzwerks).
+4. **Zugriff:** Rufen Sie `https://localhost:3000` (oder die im Terminal angezeigte Netzwerk-IP) in Ihrem Browser auf.
 
 ---
 
 ## 👤 Autor
 
-Dieses Projekt wurde erstellt und wird gewartet von **[LouBoi161](https://github.com/LouBoi161)**.
+Dieses Projekt wird von **[LouBoi161](https://github.com/LouBoi161)** gepflegt.  
 *Made with the help of AI.*
 
-Beiträge, Issues und Feature-Wünsche sind willkommen! Fühl dich frei, die [Issues-Seite](https://github.com/LouBoi161/sync-my-video/issues) zu prüfen.
+Anregungen und Fehlerberichte können über die [GitHub Issues](https://github.com/LouBoi161/sync-my-video/issues) eingereicht werden.
 
 ---
 
 ## 📜 Lizenz
 
-Dieses Projekt ist unter der [MIT-Lizenz](LICENSE) lizenziert – du kannst damit machen, was du willst!
+Dieses Projekt ist unter der [MIT-Lizenz](LICENSE) lizenziert.
