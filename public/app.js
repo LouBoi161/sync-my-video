@@ -774,15 +774,22 @@ socket.on('change-video', (index) => {
 });
 
 socket.on('sync-state', (state) => {
-  if (Math.abs(videoPlayer.currentTime - state.currentTime) > 0.5) {
+  // If force is true, we strictly follow the server (happens on join/reload)
+  const drift = Math.abs(videoPlayer.currentTime - state.currentTime);
+  if (state.force || drift > 1.0) {
     videoPlayer.currentTime = state.currentTime;
   }
+  
   if (state.isPlaying && !isForcePaused) {
-    ignoreNextPlayPauseEvent = true;
-    videoPlayer.play().catch(e => console.log('Autoplay blocked', e));
+    if (videoPlayer.paused) {
+      ignoreNextPlayPauseEvent = true;
+      videoPlayer.play().catch(e => console.log('Autoplay blocked', e));
+    }
   } else {
-    ignoreNextPlayPauseEvent = true;
-    videoPlayer.pause();
+    if (!videoPlayer.paused) {
+      ignoreNextPlayPauseEvent = true;
+      videoPlayer.pause();
+    }
   }
 });
 
@@ -977,11 +984,82 @@ const rtcConfig = {
   iceCandidatePoolSize: 10
 };
 
+function createCamWrapper(id, username, isLocal = false) {
+  const wrapper = document.createElement('div');
+  wrapper.id = isLocal ? 'wrapper-local' : `wrapper-${id}`;
+  wrapper.className = 'cam-wrapper';
+  
+  const videoEl = document.createElement('video');
+  videoEl.id = isLocal ? 'local-video' : `cam-${id}`;
+  videoEl.autoplay = true;
+  videoEl.playsInline = true;
+  if (isLocal) videoEl.muted = true;
+  
+  // Resize Logic
+  const handle = document.createElement('div');
+  handle.className = 'resize-handle';
+  
+  let isResizing = false;
+  const startResize = (e) => {
+    isResizing = true;
+    e.preventDefault();
+    const startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const startWidth = wrapper.offsetWidth;
+    
+    const onMove = (moveEvent) => {
+      if (!isResizing) return;
+      const currentX = moveEvent.type === 'touchmove' ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const newWidth = startWidth + (currentX - startX);
+      wrapper.style.width = `${Math.max(80, Math.min(400, newWidth))}px`;
+    };
+    
+    const stopResize = () => {
+      isResizing = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('touchmove', onMove);
+    };
+    
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove);
+    window.addEventListener('mouseup', stopResize);
+    window.addEventListener('touchend', stopResize);
+  };
+  
+  handle.addEventListener('mousedown', startResize);
+  handle.addEventListener('touchstart', startResize);
+
+  // Rotation Logic
+  let rotation = 0;
+  const rotate = () => {
+    rotation = (rotation + 90) % 360;
+    videoEl.style.transform = `rotate(${rotation}deg)`;
+    videoEl.style.objectFit = (rotation % 180 === 0) ? 'cover' : 'contain';
+  };
+
+  const nameEl = document.createElement('span');
+  nameEl.className = 'cam-name';
+  nameEl.textContent = username || (isLocal ? 'Du' : 'Gast');
+  nameEl.style.cursor = 'pointer';
+  nameEl.title = 'Klick zum Rotieren';
+  nameEl.onclick = rotate;
+  
+  wrapper.appendChild(videoEl);
+  wrapper.appendChild(nameEl);
+  wrapper.appendChild(handle);
+  
+  return { wrapper, videoEl };
+}
+
 function createPeerConnection(targetId, targetUsername) {
   if (peerConnections[targetId]) return peerConnections[targetId];
 
   const pc = new RTCPeerConnection(rtcConfig);
   peerConnections[targetId] = pc;
+  
+  // Track signaling state to avoid collisions
+  pc.makingOffer = false;
+  pc.ignoreOffer = false;
+  pc.candidatesQueue = [];
 
   pc.onicecandidate = event => {
     if (event.candidate) {
@@ -991,7 +1069,7 @@ function createPeerConnection(targetId, targetUsername) {
 
   pc.onconnectionstatechange = () => {
     console.log(`Connection state with ${targetId}: ${pc.connectionState}`);
-    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+    if (pc.connectionState === 'failed') {
       console.log('Restarting failed connection...');
       pc.restartIce();
     }
@@ -999,45 +1077,29 @@ function createPeerConnection(targetId, targetUsername) {
 
   pc.onnegotiationneeded = async () => {
     try {
+      pc.makingOffer = true;
       const offer = await pc.createOffer();
+      if (pc.signalingState !== 'stable') return;
       await pc.setLocalDescription(offer);
       socket.emit('webrtc-offer', { target: targetId, offer: pc.localDescription });
     } catch (e) {
       console.error('Negotiation error:', e);
+    } finally {
+      pc.makingOffer = false;
     }
   };
 
   pc.ontrack = event => {
-    console.log('Received remote track from', targetId);
+    console.log('Received remote track from', targetId, event.streams[0]);
     let wrapper = document.getElementById(`wrapper-${targetId}`);
     if (!wrapper) {
-      wrapper = document.createElement('div');
-      wrapper.id = `wrapper-${targetId}`;
-      wrapper.className = 'cam-wrapper';
-      
-      const videoEl = document.createElement('video');
-      videoEl.id = `cam-${targetId}`;
-      videoEl.autoplay = true;
-      videoEl.playsInline = true;
-      
-      // Handle mobile orientation
-      videoEl.addEventListener('loadedmetadata', () => {
-        if (videoEl.videoWidth < videoEl.videoHeight) {
-          videoEl.style.objectFit = 'contain';
-        }
-      });
-      
-      const nameEl = document.createElement('span');
-      nameEl.className = 'cam-name';
-      nameEl.textContent = targetUsername || 'Gast';
-      
-      wrapper.appendChild(videoEl);
-      wrapper.appendChild(nameEl);
-      overlayCams.appendChild(wrapper);
+      const { wrapper: newWrapper } = createCamWrapper(targetId, targetUsername);
+      overlayCams.appendChild(newWrapper);
     }
     const videoEl = document.getElementById(`cam-${targetId}`);
     if (videoEl && videoEl.srcObject !== event.streams[0]) {
       videoEl.srcObject = event.streams[0];
+      videoEl.play().catch(e => console.warn('Auto-play remote video failed:', e));
     }
   };
 
@@ -1062,23 +1124,8 @@ async function startLocalVideo() {
     
     let localWrapper = document.getElementById('wrapper-local');
     if (!localWrapper) {
-      localWrapper = document.createElement('div');
-      localWrapper.id = 'wrapper-local';
-      localWrapper.className = 'cam-wrapper';
-      
-      const localVideo = document.createElement('video');
-      localVideo.id = 'local-video';
-      localVideo.autoplay = true;
-      localVideo.muted = true;
-      localVideo.playsInline = true;
-      
-      const nameEl = document.createElement('span');
-      nameEl.className = 'cam-name';
-      nameEl.textContent = myUsername || 'Du';
-      
-      localWrapper.appendChild(localVideo);
-      localWrapper.appendChild(nameEl);
-      overlayCams.insertBefore(localWrapper, overlayCams.firstChild);
+      const { wrapper, videoEl } = createCamWrapper('local', myUsername, true);
+      overlayCams.insertBefore(wrapper, overlayCams.firstChild);
     }
     const localVideo = document.getElementById('local-video');
     localVideo.srcObject = localStream;
@@ -1130,17 +1177,29 @@ btnToggleCam.addEventListener('click', () => {
   }
 });
 
+// Fix for camera freeze on orientation change
+let orientationTimeout;
+window.addEventListener('orientationchange', () => {
+  if (localStream) {
+    console.log('Orientation change detected, restarting camera to prevent freeze...');
+    clearTimeout(orientationTimeout);
+    orientationTimeout = setTimeout(async () => {
+      // Restart local video to adapt to new orientation
+      const wasActive = !!localStream;
+      if (wasActive) {
+        stopLocalVideo();
+        await startLocalVideo();
+      }
+    }, 500); // Wait for rotation to finish
+  }
+});
+
 // Signaling Events
 socket.on('existing-peers', (peers) => {
   peers.forEach(peer => {
     // Initiate connection to existing peers
-    const pc = createPeerConnection(peer.id, peer.username);
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        socket.emit('webrtc-offer', { target: peer.id, offer: pc.localDescription });
-      })
-      .catch(e => console.error('Offer error:', e));
+    createPeerConnection(peer.id, peer.username);
+    // onnegotiationneeded will handle the rest
   });
 });
 
@@ -1149,7 +1208,14 @@ socket.on('user-joined', (peer) => {
   li.innerHTML = `<span style="font-size: 0.8rem; color: var(--success-color);">👋 ${peer.username} ist beigetreten</span>`;
   chatMessages.appendChild(li);
   chatMessages.scrollTop = chatMessages.scrollHeight;
-  // We don't createPeerConnection here. We wait for their offer.
+  
+  // If we have a local stream, we initiate a connection to the new user
+  // to ensure they see us immediately.
+  if (localStream) {
+    console.log('Initiating connection to newcomer:', peer.id);
+    const pc = createPeerConnection(peer.id, peer.username);
+    // Negotiation will be triggered by pc.onnegotiationneeded when tracks are added
+  }
 });
 
 socket.on('user-left', (id) => {
@@ -1166,11 +1232,28 @@ socket.on('webrtc-offer', async (data) => {
   if (!pc) {
     pc = createPeerConnection(data.sender, data.username);
   }
+
   try {
+    const offerCollision = (data.offer.type === 'offer') && 
+                           (pc.makingOffer || pc.signalingState !== 'stable');
+    
+    pc.ignoreOffer = !isHost && offerCollision; 
+    if (pc.ignoreOffer) {
+      console.log('Collision detected, ignoring offer (polite)');
+      return;
+    }
+
     await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    socket.emit('webrtc-answer', { target: data.sender, answer: pc.localDescription });
+    if (data.offer.type === 'offer') {
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('webrtc-answer', { target: data.sender, answer: pc.localDescription });
+    }
+    
+    while (pc.candidatesQueue.length > 0) {
+      const candidate = pc.candidatesQueue.shift();
+      await pc.addIceCandidate(candidate);
+    }
   } catch (e) {
     console.error('Error handling offer:', e);
   }
@@ -1191,7 +1274,11 @@ socket.on('webrtc-ice-candidate', async (data) => {
   const pc = peerConnections[data.sender];
   if (pc) {
     try {
-      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      if (pc.remoteDescription && pc.remoteDescription.type) {
+        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      } else {
+        pc.candidatesQueue.push(new RTCIceCandidate(data.candidate));
+      }
     } catch(e) {
       console.error('Error adding ice candidate:', e);
     }

@@ -331,6 +331,17 @@ io.on('connection', (socket) => {
 
     // Notify others
     socket.broadcast.emit('user-joined', { id: socket.id, username: clientStates[socket.id].username });
+
+    // Force a full sync for everyone when someone joins to ensure perfect alignment
+    let estimatedTime = currentVideoState.currentTime;
+    if (currentVideoState.isPlaying) {
+      estimatedTime += (Date.now() - currentVideoState.lastUpdateTime) / 1000;
+    }
+    io.emit('sync-state', {
+      currentTime: estimatedTime,
+      isPlaying: currentVideoState.isPlaying,
+      force: true
+    });
   });
 
   // Chat
