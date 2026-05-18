@@ -4,16 +4,9 @@
   "description": "",
   "main": "server.js",
   "type": "module",
-  "bin": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "pkg . --targets node18-linux-x64 --output dist/sync-my-video",
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "pkg": {
-    "assets": [
-      "public/**/*"
-    ]
   },
   "keywords": [],
   "author": "",

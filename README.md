@@ -19,9 +19,8 @@ Ein moderner, synchronisierter Videoplayer für dein lokales Netzwerk. Schau Vid
 
 ---
 
-## 🛠️ Installation
+## 🛠️ Installation & Start
 
-### Lokal ausführen
 1. **Repository klonen:**
    ```bash
    git clone https://github.com/LouBoi161/sync-my-video.git
@@ -40,21 +39,6 @@ Ein moderner, synchronisierter Videoplayer für dein lokales Netzwerk. Schau Vid
 ---
 
 ## 🏗️ Tech Stack
-
-- **Backend:** Node.js, Express, Socket.io
-- **Frontend:** Vanilla JS, CSS3 (Glassmorphism), HTML5
-- **Streaming:** Range-Requests für flüssiges Spulen
-- **Kommunikation:** WebRTC für Face-Cams & Socket.io für Sync/Chat
-
----
-
-## 🚀 AppImage Release (Coming Soon)
-
-Wir arbeiten daran, eine portable **AppImage** Version bereitzustellen, damit du den Server ohne Node.js-Installation direkt starten kannst.
-
----
-
-## 🤝 Mitwirken
 
 Beiträge, Issues und Feature-Wünsche sind willkommen! Fühl dich frei, die [Issues-Seite](https://github.com/LouBoi161/sync-my-video/issues) zu prüfen.
 
