@@ -19,11 +19,21 @@
   <!-- Floating QR code removed and integrated into the dashboard -->
 
   <main class="container">
-    <header>
-      <h1>Sync My Video</h1>
-      <div id="status-indicator" class="status offline">
-        <span class="dot"></span>
-        <span class="text">Verbinde...</span>
+    <header style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+      <div class="qr-welcome-container" style="display: flex; gap: 1rem; align-items: center; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <div id="qrcode-welcome"></div>
+        <div style="color: black; text-align: left;">
+          <h4 style="margin: 0; font-size: 0.9rem;">Beitreten</h4>
+          <p id="welcome-link-text" style="margin: 2px 0 0 0; font-size: 0.7rem; color: #666; font-weight: bold;">Lade Netzwerk...</p>
+        </div>
+      </div>
+      
+      <div style="text-align: right;">
+        <h1>Sync My Video</h1>
+        <div id="status-indicator" class="status offline">
+          <span class="dot"></span>
+          <span class="text">Verbinde...</span>
+        </div>
       </div>
     </header>
 
@@ -45,9 +55,8 @@
       
       <div class="network-info" style="margin-bottom: 1.5rem;">
         <h3>1. Netzwerk-Link teilen</h3>
-        <p style="margin-bottom: 0.5rem; font-size: 0.9rem;">Wähle dein Netzwerk und zeige den Link deinen Freunden:</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.9rem;">Wähle dein Netzwerk:</p>
         <select id="network-select" class="btn outline" style="width: 100%; margin-bottom: 0.5rem; background: var(--bg-color); color: white;"></select>
-        <div id="network-link-display" class="large-link" style="font-size: 1.2rem; font-weight: bold; text-align: center; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 8px; color: var(--primary-color);">Lade Netzwerk...</div>
       </div>
 
       <div class="playback-options" style="margin-bottom: 1.5rem;">
@@ -207,17 +216,6 @@
               <div class="chat-input-area">
                 <input type="text" id="chat-input" placeholder="Nachricht..." autocomplete="off">
                 <button id="btn-send-chat" class="btn primary btn-small">Senden</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Island 5: QR Code -->
-          <div class="glass-panel qr-island">
-            <div style="display: flex; align-items: center; gap: 1rem; background: white; padding: 10px; border-radius: 8px;">
-              <div id="qrcode" title="Netzwerk beitreten"></div>
-              <div>
-                <h4 style="margin-bottom: 0.3rem; color: black;">Freunde einladen</h4>
-                <p style="font-size: 0.8rem; margin: 0; color: #333;">Code scannen, um beizutreten.</p>
               </div>
             </div>
           </div>

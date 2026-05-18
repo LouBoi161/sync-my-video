@@ -172,6 +172,9 @@ async function initNetworkAndQR() {
     const data = await res.json();
     networkSelect.innerHTML = '';
     
+    const welcomeLinkText = document.getElementById('welcome-link-text');
+    const qrDivWelcome = document.getElementById('qrcode-welcome');
+
     if (data.networks.length > 0) {
       data.networks.forEach(net => {
         const option = document.createElement('option');
@@ -180,16 +183,16 @@ async function initNetworkAndQR() {
         networkSelect.appendChild(option);
       });
 
-      const qrDiv = document.getElementById('qrcode');
-      
       const updateLinkAndQR = () => {
-        networkLinkDisplay.textContent = networkSelect.value;
-        if (qrDiv && typeof QRCode !== 'undefined') {
-          qrDiv.innerHTML = '';
-          new QRCode(qrDiv, {
-            text: networkSelect.value,
-            width: 150,
-            height: 150,
+        const currentUrl = networkSelect.value;
+        if (welcomeLinkText) welcomeLinkText.textContent = currentUrl;
+        
+        if (qrDivWelcome && typeof QRCode !== 'undefined') {
+          qrDivWelcome.innerHTML = '';
+          new QRCode(qrDivWelcome, {
+            text: currentUrl,
+            width: 80, // Slightly smaller for the header
+            height: 80,
             colorDark : "#000000",
             colorLight : "#ffffff",
             correctLevel : QRCode.CorrectLevel.L
@@ -200,7 +203,7 @@ async function initNetworkAndQR() {
       networkSelect.addEventListener('change', updateLinkAndQR);
       updateLinkAndQR();
     } else {
-      networkLinkDisplay.textContent = 'Keine Netzwerke gefunden (Bist du verbunden?)';
+      if (welcomeLinkText) welcomeLinkText.textContent = 'Kein Netzwerk gefunden';
     }
   } catch (e) {
     console.warn('Network load failed', e);
@@ -577,11 +580,29 @@ function formatTime(seconds) {
   return `${min}:${sec < 10 ? '0' : ''}${sec}`;
 }
 
+// Optimized Time Update (Throttle to save CPU)
+let lastTimeUpdate = 0;
 videoPlayer.addEventListener('timeupdate', () => {
-  const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
-  progressFillPlayer.style.width = percent + '%';
-  currentTimeEl.textContent = formatTime(videoPlayer.currentTime);
+  const now = Date.now();
+  if (now - lastTimeUpdate < 250) return; // Only update every 250ms
+  lastTimeUpdate = now;
+
+  if (videoPlayer.duration) {
+    const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+    progressFillPlayer.style.width = percent + '%';
+    currentTimeEl.textContent = formatTime(videoPlayer.currentTime);
+  }
 });
+
+// Watchdog: Ensure remote videos don't freeze/pause due to browser throttling
+setInterval(() => {
+  document.querySelectorAll('.cam-wrapper video').forEach(video => {
+    if (video.paused && video.srcObject && !video.id.includes('local')) {
+      console.log('Watchdog: Remote video was paused, restarting...');
+      video.play().catch(() => {});
+    }
+  });
+}, 2000);
 
 videoPlayer.addEventListener('loadedmetadata', () => {
   durationEl.textContent = formatTime(videoPlayer.duration);
