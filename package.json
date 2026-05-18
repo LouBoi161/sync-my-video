@@ -9,8 +9,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "LouBoi161",
+  "license": "MIT",
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
