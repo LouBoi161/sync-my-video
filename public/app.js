@@ -664,6 +664,7 @@ btnFullscreen.addEventListener('click', () => {
 chatBubble.addEventListener('click', (e) => {
   e.stopPropagation();
   chatOverlayInputContainer.classList.toggle('hidden');
+  chatBubble.classList.toggle('active');
   if (!chatOverlayInputContainer.classList.contains('hidden')) {
     chatOverlayInput.focus();
   }
@@ -684,6 +685,7 @@ chatOverlayInput.addEventListener('keypress', (e) => {
 document.addEventListener('click', (e) => {
   if (!chatOverlayInputContainer.contains(e.target) && e.target !== chatBubble) {
     chatOverlayInputContainer.classList.add('hidden');
+    chatBubble.classList.remove('active');
   }
 });
 

@@ -333,6 +333,9 @@ h1 {
   right: 15px;
   pointer-events: auto;
   z-index: 160;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Keeps bubble on the right */
 }
 
 .chat-bubble {
@@ -345,24 +348,43 @@ h1 {
   justify-content: center;
   color: white;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 161;
+}
+
+.chat-bubble:hover {
+  transform: scale(1.1);
+  background: var(--primary-hover);
+}
+
+.chat-bubble:active {
+  transform: scale(0.9);
+}
+
+.chat-bubble.active {
+  transform: scale(1.2);
+  background: #ec4899; /* Change color when active for feedback */
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
 }
 
 .chat-overlay-input-container {
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  padding: 10px;
+  padding: 12px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   width: 280px;
-  margin-top: 10px;
+  margin-top: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-origin: top right;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(30px) scale(0.9); }
-  to { opacity: 1; transform: translateX(0) scale(1); }
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.5) translateY(-20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .chat-overlay-input-container input {
