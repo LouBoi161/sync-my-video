@@ -16,8 +16,6 @@
     <div class="blob blob-2"></div>
   </div>
 
-  <!-- Floating QR code removed and integrated into the dashboard -->
-
   <main class="container">
     <header style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
       <div class="qr-welcome-container" style="display: flex; gap: 1rem; align-items: center; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
@@ -111,9 +109,6 @@
               
               <!-- Custom Player Overlays -->
               <div class="video-overlays">
-                <!-- Top Left: Cams -->
-                <div id="overlay-cams" class="overlay-cams"></div>
-                
                 <!-- Top Center: Notifications -->
                 <div id="overlay-notifications" class="overlay-notifications"></div>
 
@@ -195,20 +190,7 @@
 
         <!-- Side Column (Right) -->
         <div class="side-column">
-          <!-- Island 3: Cams -->
-          <div class="glass-panel cams-island">
-            <div class="cam-container">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <h3>Kameras</h3>
-                <button id="btn-toggle-cam" class="btn outline btn-small" style="padding: 0.2rem 0.5rem;">Kamera An</button>
-              </div>
-              <div id="video-grid" class="video-grid">
-                <!-- Cams will be injected here -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Island 4: Chat -->
+          <!-- Island 3: Chat -->
           <div class="glass-panel chat-island">
             <div class="chat-container">
               <h3>Chat</h3>

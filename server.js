@@ -354,29 +354,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // WebRTC Signaling
-  socket.on('webrtc-offer', (data) => {
-    io.to(data.target).emit('webrtc-offer', {
-      sender: socket.id,
-      offer: data.offer,
-      username: clientStates[socket.id]?.username
-    });
-  });
-
-  socket.on('webrtc-answer', (data) => {
-    io.to(data.target).emit('webrtc-answer', {
-      sender: socket.id,
-      answer: data.answer
-    });
-  });
-
-  socket.on('webrtc-ice-candidate', (data) => {
-    io.to(data.target).emit('webrtc-ice-candidate', {
-      sender: socket.id,
-      candidate: data.candidate
-    });
-  });
-
   socket.on('sync-heartbeat', (state) => {
     if (!clientStates[socket.id]) {
       clientStates[socket.id] = { currentTime: 0, isBuffering: false, isPlaying: false, lastUpdate: Date.now(), username: 'Unbekannt' };

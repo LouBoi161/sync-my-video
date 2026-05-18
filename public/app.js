@@ -11,8 +11,6 @@ const btnHost = document.getElementById('btn-host');
 const btnClient = document.getElementById('btn-client');
 const usernameInput = document.getElementById('username-input');
 
-const btnToggleCam = document.getElementById('btn-toggle-cam');
-const videoGrid = document.getElementById('video-grid');
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const btnSendChat = document.getElementById('btn-send-chat');
@@ -54,7 +52,6 @@ const volumeSlider = document.getElementById('volume-slider');
 const btnFullscreen = document.getElementById('btn-fullscreen');
 
 // Overlay Elements
-const overlayCams = document.getElementById('overlay-cams');
 const chatBubble = document.getElementById('chat-bubble');
 const chatOverlayInputContainer = document.getElementById('chat-overlay-input-container');
 const chatOverlayInput = document.getElementById('chat-overlay-input');
@@ -966,6 +963,13 @@ socket.on('chat-message', (data) => {
   }
 });
 
+socket.on('user-muted', (data) => {
+  const wrapper = document.getElementById(`wrapper-${data.id}`);
+  if (wrapper) {
+    wrapper.classList.toggle('user-muted', data.isMuted);
+  }
+});
+
 // Inactivity Hiding Logic
 let inactivityTimer;
 function resetInactivityTimer() {
@@ -985,329 +989,21 @@ function resetInactivityTimer() {
 videoWrapper.addEventListener('mousemove', resetInactivityTimer);
 videoWrapper.addEventListener('touchstart', resetInactivityTimer);
 videoPlayer.addEventListener('play', resetInactivityTimer);
-videoPlayer.addEventListener('pause', () => {
+videoWrapper.addEventListener('pause', () => {
   videoWrapper.classList.remove('inactive');
   clearTimeout(inactivityTimer);
 });
 
-// WebRTC Facecam
-const peerConnections = {};
-let localStream = null;
-
-const rtcConfig = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' }
-  ],
-  iceCandidatePoolSize: 10
-};
-
-function createCamWrapper(id, username, isLocal = false) {
-  const wrapper = document.createElement('div');
-  wrapper.id = isLocal ? 'wrapper-local' : `wrapper-${id}`;
-  wrapper.className = 'cam-wrapper';
-  
-  const videoEl = document.createElement('video');
-  videoEl.id = isLocal ? 'local-video' : `cam-${id}`;
-  videoEl.autoplay = true;
-  videoEl.playsInline = true;
-  if (isLocal) videoEl.muted = true;
-  
-  // Resize Logic
-  const handle = document.createElement('div');
-  handle.className = 'resize-handle';
-  
-  let isResizing = false;
-  const startResize = (e) => {
-    isResizing = true;
-    e.preventDefault();
-    const startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-    const startWidth = wrapper.offsetWidth;
-    
-    const onMove = (moveEvent) => {
-      if (!isResizing) return;
-      const currentX = moveEvent.type === 'touchmove' ? moveEvent.touches[0].clientX : moveEvent.clientX;
-      const newWidth = startWidth + (currentX - startX);
-      wrapper.style.width = `${Math.max(80, Math.min(400, newWidth))}px`;
-    };
-    
-    const stopResize = () => {
-      isResizing = false;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('touchmove', onMove);
-    };
-    
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('touchmove', onMove);
-    window.addEventListener('mouseup', stopResize);
-    window.addEventListener('touchend', stopResize);
-  };
-  
-  handle.addEventListener('mousedown', startResize);
-  handle.addEventListener('touchstart', startResize);
-
-  // Rotation Logic
-  let rotation = 0;
-  const rotate = () => {
-    rotation = (rotation + 90) % 360;
-    videoEl.style.transform = `rotate(${rotation}deg)`;
-    videoEl.style.objectFit = (rotation % 180 === 0) ? 'cover' : 'contain';
-  };
-
-  const nameEl = document.createElement('span');
-  nameEl.className = 'cam-name';
-  nameEl.textContent = username || (isLocal ? 'Du' : 'Gast');
-  nameEl.style.cursor = 'pointer';
-  nameEl.title = 'Klick zum Rotieren';
-  nameEl.onclick = rotate;
-  
-  wrapper.appendChild(videoEl);
-  wrapper.appendChild(nameEl);
-  wrapper.appendChild(handle);
-  
-  return { wrapper, videoEl };
-}
-
-function createPeerConnection(targetId, targetUsername) {
-  if (peerConnections[targetId]) return peerConnections[targetId];
-
-  const pc = new RTCPeerConnection(rtcConfig);
-  peerConnections[targetId] = pc;
-  
-  // Track signaling state to avoid collisions
-  pc.makingOffer = false;
-  pc.ignoreOffer = false;
-  pc.candidatesQueue = [];
-
-  pc.onicecandidate = event => {
-    if (event.candidate) {
-      socket.emit('webrtc-ice-candidate', { target: targetId, candidate: event.candidate });
-    }
-  };
-
-  pc.onconnectionstatechange = () => {
-    console.log(`Connection state with ${targetId}: ${pc.connectionState}`);
-    if (pc.connectionState === 'failed') {
-      console.log('Restarting failed connection...');
-      pc.restartIce();
-    }
-  };
-
-  pc.onnegotiationneeded = async () => {
-    try {
-      pc.makingOffer = true;
-      const offer = await pc.createOffer();
-      if (pc.signalingState !== 'stable') return;
-      await pc.setLocalDescription(offer);
-      socket.emit('webrtc-offer', { target: targetId, offer: pc.localDescription });
-    } catch (e) {
-      console.error('Negotiation error:', e);
-    } finally {
-      pc.makingOffer = false;
-    }
-  };
-
-  pc.ontrack = event => {
-    console.log('Received remote track from', targetId, event.streams[0]);
-    let wrapper = document.getElementById(`wrapper-${targetId}`);
-    if (!wrapper) {
-      const { wrapper: newWrapper } = createCamWrapper(targetId, targetUsername);
-      overlayCams.appendChild(newWrapper);
-    }
-    const videoEl = document.getElementById(`cam-${targetId}`);
-    if (videoEl && videoEl.srcObject !== event.streams[0]) {
-      videoEl.srcObject = event.streams[0];
-      videoEl.play().catch(e => console.warn('Auto-play remote video failed:', e));
-    }
-  };
-
-  if (localStream) {
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-  }
-
-  return pc;
-}
-
-async function startLocalVideo() {
-  try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("⚠️ Kamera Fehler!\n\nDein Browser blockiert die Kamera.\nBitte stelle sicher, dass du auf der Seite 'Erweitert -> Risiko akzeptieren' geklickt hast, da Kameras nur über verschlüsselte HTTPS Verbindungen funktionieren.");
-      return;
-    }
-    
-    // Optimized constraints for performance: Lower resolution & FPS is enough for face cams
-    localStream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        width: { ideal: 320 }, 
-        height: { ideal: 240 }, 
-        frameRate: { ideal: 20 },
-        facingMode: "user" 
-      }, 
-      audio: true 
-    });
-    
-    let localWrapper = document.getElementById('wrapper-local');
-    if (!localWrapper) {
-      const { wrapper, videoEl } = createCamWrapper('local', myUsername, true);
-      overlayCams.insertBefore(wrapper, overlayCams.firstChild);
-    }
-    const localVideo = document.getElementById('local-video');
-    localVideo.srcObject = localStream;
-
-    for (const id in peerConnections) {
-      const pc = peerConnections[id];
-      localStream.getTracks().forEach(track => {
-        const senders = pc.getSenders();
-        const hasTrack = senders.find(s => s.track === track);
-        if (!hasTrack) pc.addTrack(track, localStream);
-      });
-    }
-
-    btnToggleCam.textContent = 'Kamera Aus';
-    btnToggleCam.style.background = '#ff4d4d';
-    btnToggleCam.style.borderColor = '#ff4d4d';
-    btnToggleCam.style.color = 'white';
-  } catch (e) {
-    console.error('Kamera-Fehler:', e);
-    alert('Kamera konnte nicht gestartet werden: ' + e.message);
-  }
-}
-
-function stopLocalVideo() {
-  if (localStream) {
-    localStream.getTracks().forEach(t => t.stop());
-    localStream = null;
-    
-    const wrapper = document.getElementById('wrapper-local');
-    if (wrapper) wrapper.remove();
-
-    Object.values(peerConnections).forEach(pc => {
-      const senders = pc.getSenders();
-      senders.forEach(sender => pc.removeTrack(sender));
-    });
-
-    btnToggleCam.textContent = 'Kamera An';
-    btnToggleCam.style.background = 'transparent';
-    btnToggleCam.style.borderColor = 'var(--primary-color)';
-    btnToggleCam.style.color = 'var(--primary-color)';
-  }
-}
-
-btnToggleCam.addEventListener('click', () => {
-  if (localStream) {
-    stopLocalVideo();
-  } else {
-    startLocalVideo();
-  }
-});
-
-// Fix for camera freeze on orientation change
-let orientationTimeout;
-window.addEventListener('orientationchange', () => {
-  if (localStream) {
-    console.log('Orientation change detected, restarting camera to prevent freeze...');
-    clearTimeout(orientationTimeout);
-    orientationTimeout = setTimeout(async () => {
-      // Restart local video to adapt to new orientation
-      const wasActive = !!localStream;
-      if (wasActive) {
-        stopLocalVideo();
-        await startLocalVideo();
-      }
-    }, 500); // Wait for rotation to finish
-  }
-});
-
-// Signaling Events
-socket.on('existing-peers', (peers) => {
-  peers.forEach(peer => {
-    // Initiate connection to existing peers
-    createPeerConnection(peer.id, peer.username);
-    // onnegotiationneeded will handle the rest
-  });
-});
-
 socket.on('user-joined', (peer) => {
+
   const li = document.createElement('li');
   li.innerHTML = `<span style="font-size: 0.8rem; color: var(--success-color);">👋 ${peer.username} ist beigetreten</span>`;
   chatMessages.appendChild(li);
   chatMessages.scrollTop = chatMessages.scrollHeight;
-  
-  // If we have a local stream, we initiate a connection to the new user
-  // to ensure they see us immediately.
-  if (localStream) {
-    console.log('Initiating connection to newcomer:', peer.id);
-    const pc = createPeerConnection(peer.id, peer.username);
-    // Negotiation will be triggered by pc.onnegotiationneeded when tracks are added
-  }
 });
 
 socket.on('user-left', (id) => {
-  if (peerConnections[id]) {
-    peerConnections[id].close();
-    delete peerConnections[id];
-  }
-  const wrapper = document.getElementById(`wrapper-${id}`);
-  if (wrapper) wrapper.remove();
+  // Logic for user leaving (could add a chat message here if desired)
 });
 
-socket.on('webrtc-offer', async (data) => {
-  let pc = peerConnections[data.sender];
-  if (!pc) {
-    pc = createPeerConnection(data.sender, data.username);
-  }
 
-  try {
-    const offerCollision = (data.offer.type === 'offer') && 
-                           (pc.makingOffer || pc.signalingState !== 'stable');
-    
-    pc.ignoreOffer = !isHost && offerCollision; 
-    if (pc.ignoreOffer) {
-      console.log('Collision detected, ignoring offer (polite)');
-      return;
-    }
-
-    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-    if (data.offer.type === 'offer') {
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit('webrtc-answer', { target: data.sender, answer: pc.localDescription });
-    }
-    
-    while (pc.candidatesQueue.length > 0) {
-      const candidate = pc.candidatesQueue.shift();
-      await pc.addIceCandidate(candidate);
-    }
-  } catch (e) {
-    console.error('Error handling offer:', e);
-  }
-});
-
-socket.on('webrtc-answer', async (data) => {
-  const pc = peerConnections[data.sender];
-  if (pc) {
-    try {
-      await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-    } catch (e) {
-      console.error('Error handling answer:', e);
-    }
-  }
-});
-
-socket.on('webrtc-ice-candidate', async (data) => {
-  const pc = peerConnections[data.sender];
-  if (pc) {
-    try {
-      if (pc.remoteDescription && pc.remoteDescription.type) {
-        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-      } else {
-        pc.candidatesQueue.push(new RTCIceCandidate(data.candidate));
-      }
-    } catch(e) {
-      console.error('Error adding ice candidate:', e);
-    }
-  }
-});
