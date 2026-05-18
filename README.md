@@ -1,6 +1,6 @@
 # 🎥 Sync My Video
 
-[![GitHub license](https://img.shields.io/github/license/LouBoi161/sync-my-video?style=for-the-badge)](https://github.com/LouBoi161/sync-my-video/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/LouBoi161/sync-my-video?style=for-the-badge)](https://github.com/LouBoi161/sync-my-video/stargazers)
 
 Ein moderner, synchronisierter Videoplayer für lokale Netzwerke. Dieses Tool ermöglicht die gemeinsame Wiedergabe von Videos in Echtzeit, ergänzt durch eine integrierte Chat-Funktion.
