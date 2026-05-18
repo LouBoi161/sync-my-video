@@ -1,0 +1,21 @@
+{
+  "name": "sync-my-video",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "ip": "^2.0.1",
+    "multer": "^2.1.1",
+    "socket.io": "^4.8.3"
+  }
+}
