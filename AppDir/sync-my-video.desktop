@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Sync My Video
+Exec=sync-my-video
+Icon=sync-my-video
+Type=Application
+Categories=Video;AudioVideo;
+Comment=Synchronisierter Videoplayer für das lokale Netzwerk
