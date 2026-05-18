@@ -1117,8 +1117,14 @@ async function startLocalVideo() {
       return;
     }
     
+    // Optimized constraints for performance: Lower resolution & FPS is enough for face cams
     localStream = await navigator.mediaDevices.getUserMedia({ 
-      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, 
+      video: { 
+        width: { ideal: 320 }, 
+        height: { ideal: 240 }, 
+        frameRate: { ideal: 20 },
+        facingMode: "user" 
+      }, 
       audio: true 
     });
     

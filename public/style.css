@@ -141,6 +141,13 @@ h1 {
   transition: all 0.3s ease;
 }
 
+/* Performance optimization: Disable blur on video island to save GPU */
+.video-island {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(30, 41, 59, 0.9); /* Solid glass without blur */
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -322,16 +329,17 @@ p {
   width: 120px;
   min-width: 80px;
   max-width: 350px;
-  opacity: 0.75;
-  background: rgba(0,0,0,0.5);
+  opacity: 0.85; /* Increased opacity for less blending overhead */
+  background: #000; /* Solid background */
   border-radius: 8px;
   padding: 2px;
   transition: opacity 0.3s;
   position: relative;
-  overflow: visible; /* Changed to visible for handle */
+  overflow: visible;
   display: flex;
   flex-direction: column;
-  touch-action: none; /* Prevent scrolling while resizing */
+  touch-action: none;
+  contain: layout; /* Helps browser optimize rendering */
 }
 
 /* Touch Resize Handle */
