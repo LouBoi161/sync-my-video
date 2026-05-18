@@ -40,6 +40,7 @@ Ein moderner, synchronisierter Videoplayer für dein lokales Netzwerk. Schau Vid
 ## 👤 Autor
 
 Dieses Projekt wurde erstellt und wird gewartet von **[LouBoi161](https://github.com/LouBoi161)**.
+*Made with the help of AI.*
 
 Beiträge, Issues und Feature-Wünsche sind willkommen! Fühl dich frei, die [Issues-Seite](https://github.com/LouBoi161/sync-my-video/issues) zu prüfen.
 
