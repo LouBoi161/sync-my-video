@@ -964,15 +964,21 @@ socket.on('chat-message', (data) => {
 });
 
 // Emoji Board Logic
-const emojiBoard = document.getElementById('emoji-board');
-if (emojiBoard) {
-  emojiBoard.querySelectorAll('.emoji-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const emoji = btn.getAttribute('data-emoji');
-      socket.emit('emoji-reaction', emoji);
+function setupEmojiBoard(boardId) {
+  const board = document.getElementById(boardId);
+  if (board) {
+    board.querySelectorAll('.emoji-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent closing overlay if in overlay
+        const emoji = btn.getAttribute('data-emoji');
+        socket.emit('emoji-reaction', emoji);
+      });
     });
-  });
+  }
 }
+
+setupEmojiBoard('emoji-board');
+setupEmojiBoard('emoji-board-overlay');
 
 socket.on('emoji-reaction', (emoji) => {
   spawnFlyingEmoji(emoji);
