@@ -1,0 +1,42 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags like v1.0.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build standalone binary
+        run: |
+          mkdir -p dist
+          npx pkg . --targets node18-linux-x64 --output dist/sync-my-video
+
+      - name: Create Release Assets
+        run: |
+          cd dist
+          tar -czvf sync-my-video-linux.tar.gz sync-my-video
+          zip sync-my-video-linux.zip sync-my-video
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/sync-my-video-linux.tar.gz
+            dist/sync-my-video-linux.zip
+            dist/sync-my-video
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
