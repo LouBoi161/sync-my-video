@@ -80,7 +80,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Serve static files from the 'public' directory
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Endpoint to get network IPs
 app.get('/api/network', (req, res) => {
